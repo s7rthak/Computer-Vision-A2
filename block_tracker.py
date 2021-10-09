@@ -93,7 +93,7 @@ ghi = cv2.rectangle(img2, rectangles[0][0] , end_point, (255, 0, 0), 2)
 cv2.imwrite('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/BlurCar2/output/0001.jpg',ghi)
 
 miou_tot = 0
-for i in range(2,351):
+for i in range(2,585):
     img1 = img2
     img2 = cv2.imread('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/Bolt/img/'+ str(i).zfill(4)+'.jpg')
     store_img_1 = cv2.cvtColor(img1,cv2.COLOR_BGR2GRAY)
