@@ -71,7 +71,7 @@ def block_search_function(img1,img2,corner,dimension,search_radius,stride,type_d
                 
 
 
-file1= open('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/Bolt/groundtruth_rect.txt')
+file1= open('A2/Bolt/groundtruth_rect.txt')
 Lines = file1.readlines()
 rectangles = []
 for line in Lines:
@@ -84,24 +84,25 @@ for line in Lines:
     
 print('Reading done.')
     
-img2 = cv2.imread('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/Bolt/img/0001.jpg')
+img2 = cv2.imread('A2/Bolt/img/0001.jpg')
 initial_rect = rectangles[0][0]
 dimensions = rectangles[0][1]
 
 end_point = (rectangles[0][0][0]+rectangles[0][1][0],rectangles[0][0][1]+rectangles[0][1][1])
 ghi = cv2.rectangle(img2, rectangles[0][0] , end_point, (255, 0, 0), 2)
-cv2.imwrite('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/BlurCar2/output/0001.jpg',ghi)
+cv2.imwrite('A2/Bolt/output/0001.jpg',ghi)
 
 miou_tot = 0
-for i in range(2,585):
+for i in range(2,351):
+    print(i)
     img1 = img2
-    img2 = cv2.imread('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/Bolt/img/'+ str(i).zfill(4)+'.jpg')
+    img2 = cv2.imread('A2/Bolt/img/'+ str(i).zfill(4)+'.jpg')
     store_img_1 = cv2.cvtColor(img1,cv2.COLOR_BGR2GRAY)
     store_img_2 = cv2.cvtColor(img2,cv2.COLOR_BGR2GRAY)   
     coordinates = block_search_function(store_img_1,store_img_2,initial_rect,dimensions,max(dimensions[0],dimensions[1]),1,2)
     end_point = (coordinates[0]+dimensions[0],coordinates[1]+dimensions[1])
     ghi = cv2.rectangle(img2, coordinates , end_point, (255, 0, 0), 2)
-    cv2.imwrite('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/Bolt/output/ '+str(i).zfill(4)+'.jpg',ghi)
+    cv2.imwrite('A2/Bolt/output/'+str(i).zfill(4)+'.jpg',ghi)
     miou_tot += iou_compute(rectangles[i-1][0],dimensions,coordinates,dimensions)
     initial_rect = coordinates
 

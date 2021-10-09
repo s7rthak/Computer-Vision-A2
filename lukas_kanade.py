@@ -220,7 +220,7 @@ def projective_plotter(img,point,dimension,parameters):
 
 
     
-file1= open('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/BlurCar2/groundtruth_rect.txt')
+file1= open('A2/BlurCar2/groundtruth_rect.txt')
 Lines = file1.readlines()
 rectangles = []
 for line in Lines:
@@ -244,17 +244,17 @@ for line in Lines:
 # 
 # =============================================================================
 
-img2 = cv2.imread('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/BlurCar2/img/0001.jpg')
+img2 = cv2.imread('A2/BlurCar2/img/0001.jpg')
 initial_rect = rectangles[0][0]
 initial_parameters = np.array([0,0,0,0,0,0,0,0,0])
 dimensions = rectangles[0][1]
 end_point = (rectangles[0][0][0]+rectangles[0][1][0],rectangles[0][0][1]+rectangles[0][1][1])
 ghi = cv2.rectangle(img2, rectangles[0][0] , end_point, (255, 0, 0), 2)
-cv2.imwrite('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/BlurCar2/output/0001.jpg',ghi)
+cv2.imwrite('A2/BlurCar2/output/0001.jpg',ghi)
 for i in range(2,351):
     print(i)
     img1 = img2
-    img2 = cv2.imread('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/BlurCar2/img/'+ str(i).zfill(4)+'.jpg')
+    img2 = cv2.imread('A2/BlurCar2/img/'+ str(i).zfill(4)+'.jpg')
     store_img_1 = cv2.cvtColor(img1,cv2.COLOR_BGR2GRAY)
     store_img_2 = cv2.cvtColor(img2,cv2.COLOR_BGR2GRAY)   
     parameters = projective_tracker(store_img_1,store_img_2,initial_parameters,initial_rect,dimensions)
@@ -264,7 +264,7 @@ for i in range(2,351):
     #store_img = cv2.warpPerspective(img2,warp_mat,(img2.shape[1],img2.shape[0]),flags=cv2.INTER_CUBIC)
     #ghi = cv2.rectangle(store_img, rectangles[0][0] , end_point, (255, 0, 0), 2)
     ghi = projective_plotter(img2,rectangles[0][0], rectangles[0][1] ,parameters)
-    cv2.imwrite('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/BlurCar2/output/ '+str(i).zfill(4)+'.jpg',ghi)
+    cv2.imwrite('A2/BlurCar2/output/ '+str(i).zfill(4)+'.jpg',ghi)
     
     
 
