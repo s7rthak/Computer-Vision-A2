@@ -24,8 +24,9 @@ def iou(bb1, bb2):
 
     return iou
 
+
 class BlockMatch():
-    def __init__(self, template, bbox, alpha=0.7):
+    def __init__(self, template, bbox, alpha=0.2):
         self.template = template
         self.alpha = alpha
         self.bbox = bbox
@@ -58,14 +59,16 @@ class BlockMatch():
                         current_best_match = (j, i, self.w, self.h)
 
                 if measure == NCC:
-                    normalized_img = np.zeros((self.h, self.w, C))
+                    normalized_img, normalized_template = np.zeros((self.h, self.w, C)), np.zeros((self.h, self.w, C))
                     if C == 1:
                         normalized_img = (current_block - np.mean(current_block))/np.std(current_block)
+                        normalized_template = (self.template - np.mean(self.template))/np.std(self.template)
                     else:
-                        for i in range(C):
-                            normalized_img[:,:,i] = (current_block[:,:,i] - np.mean(current_block[:,:,i].flatten()))/np.std(current_block[:,:,i].flatten())
+                        for k in range(C):
+                            normalized_img[:,:,k] = (current_block[:,:,k] - np.mean(current_block[:,:,k].flatten()))/np.std(current_block[:,:,k].flatten())
+                            normalized_template[:,:,k] = (self.template[:,:,k] - np.mean(self.template[:,:,k].flatten()))/np.std(self.template[:,:,k].flatten())
                     
-                    consolidated_diff = np.sum((self.template.flatten()).dot(normalized_img.flatten().T))
+                    consolidated_diff = np.sum(np.multiply(normalized_img, normalized_template))
                     if consolidated_diff > max_diff:
                         max_diff = consolidated_diff
                         current_best_match = (j, i, self.w, self.h)
