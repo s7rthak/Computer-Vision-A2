@@ -132,7 +132,7 @@ def jacobian_projection(parameters,x_shape,y_shape,coordinates):
     jacob = jacob/ (den * den).reshape(y_shape,x_shape,1,1)
     return jacob
         
-def projective_tracker(img_template, img_search, initial_parameters ,coordinate, dimension, max_iter=100,learning_rate=0.05):
+def projective_tracker(img_template, img_search, initial_parameters ,coordinate, dimension, max_iter=100,learning_rate=0.01):
     
     global store1
     
