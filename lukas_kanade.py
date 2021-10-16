@@ -8,8 +8,6 @@ template = None
 rows = None
 cols = None
 
-store1 = None
-sum1= 0
 
 def binary_mask_iou(mask1, mask2):
     mask1_area = np.count_nonzero(mask1 == 255)
@@ -47,9 +45,8 @@ def jacobian_translation(x_shape,y_shape,coordinates):
 
 def translation_tracker(img_template, img_search, initial_parameters, coordinate, dimension, max_iter=500,learning_rate=0.05):
     
-    global store1
     parameters = np.array([0,0])
- #   parameters = initial_parameters
+    parameters = initial_parameters
     iterations = 0
     
     while(iterations<max_iter):
@@ -82,13 +79,12 @@ def translation_tracker(img_template, img_search, initial_parameters, coordinate
         dp = np.matmul(hess_inv,update).reshape(-1)
        
         #Needs to be checked, not sure about the +- thing @Sarthak
-        parameters =parameters - learning_rate * dp
+        parameters =parameters + learning_rate * dp
         
         norm = np.linalg.norm(dp)
         if(norm) < 0.001:
             break
         
-    store1 = np.linalg.norm(diff.flatten())
     return parameters
 
 
@@ -108,12 +104,12 @@ def jacobian_affine(x_shape,y_shape,coordinates):
     return jacob
 
 #Input image can have some associated affine transformation as well 
-def affine_tracker(img_template, img_search, initial_parameters, coordinate, dimension, max_iter=500,learning_rate=0.05):
+def affine_tracker(img_template, img_search, initial_parameters, coordinate, dimension, max_iter=100,learning_rate=0.05):
     
-    global store1
+    global template
     
     parameters = np.array([0,0,0,0,0,0])
-#    parameters = initial_parameters
+    parameters = initial_parameters
     iterations = 0
     
     while(iterations<max_iter):
@@ -134,7 +130,6 @@ def affine_tracker(img_template, img_search, initial_parameters, coordinate, dim
         gradient_fin = np.stack((gradient_dx,gradient_dy),axis=2)
         gradient_fin = np.expand_dims(gradient_fin,axis=2)
         
-        
         #Applying Lukas Kanade Formula
         jacob = jacobian_affine(cols,rows,coordinate)
         steepest_descent = np.matmul(gradient_fin,jacob)
@@ -149,13 +144,12 @@ def affine_tracker(img_template, img_search, initial_parameters, coordinate, dim
         dp = np.matmul(hess_inv,update).reshape(-1)
        
         #Needs to be checked, not sure about the +- thing @Sarthak
-        parameters =parameters - learning_rate * dp
+        parameters =parameters + learning_rate * dp
         
         norm = np.linalg.norm(dp)
         if(norm) < 0.001:
             break
         
-    store1 = np.linalg.norm(diff.flatten())
     return parameters
         
 
@@ -177,9 +171,8 @@ def jacobian_projection(parameters,x_shape,y_shape,coordinates):
     jacob = jacob/ (den * den).reshape(y_shape,x_shape,1,1)
     return jacob
         
-def projective_tracker(img_template, img_search, initial_parameters ,coordinate, dimension, max_iter=500,learning_rate=0.001):
+def projective_tracker(img_template, img_search, initial_parameters ,coordinate, dimension, max_iter=100,learning_rate=0.001):
     
-    global store1
     
     parameters = np.array([0,0,0,0,0,0,0,0,0])
     parameters = initial_parameters
@@ -204,6 +197,7 @@ def projective_tracker(img_template, img_search, initial_parameters ,coordinate,
         gradient_fin = np.expand_dims(gradient_fin,axis=2)
         
         
+        
         #Applying Lukas Kanade Formula
         jacob = jacobian_projection(parameters,cols,rows,coordinate)
         steepest_descent = np.matmul(gradient_fin,jacob)
@@ -225,7 +219,6 @@ def projective_tracker(img_template, img_search, initial_parameters ,coordinate,
         if(norm) < 0.001:
             break
         
-        store1 = np.linalg.norm(diff)
     return parameters
 
 
@@ -299,49 +292,3 @@ def mask_plotter(point_list,img):
     return mask
 
     
-file1= open('A2/BlurCar2/groundtruth_rect.txt')
-Lines = file1.readlines()
-rectangles = []
-for line in Lines:
-    word= line.split()
-    xyz = []
-    xyz.append((int(word[0]),(int(word[1]))))
-    xyz.append((int(word[2]),(int(word[3]))))
-    rectangles.append(xyz)
-
-img2 = cv2.imread('A2/BlurCar2/img/0001.jpg')
-initial_rect = rectangles[0][0]
-initial_parameters = np.array([0,0,0,0,0,0,0,0,0])
-dimensions = rectangles[0][1]
-end_point = (rectangles[0][0][0]+rectangles[0][1][0],rectangles[0][0][1]+rectangles[0][1][1])
-ghi = cv2.rectangle(img2, rectangles[0][0] , end_point, (255, 0, 0), 2)
-cv2.imwrite('A2/BlurCar2/output/0001.jpg',ghi)
-   
-template = crop(cv2.cvtColor(img2,cv2.COLOR_BGR2GRAY),initial_rect, dimensions)
-rows, cols = template.shape
-cv2.imwrite('A2/BlurCar2/output/template.jpg',template)
-
-mask_iou_store = []
-for i in range(2,585):
-    print(i)
-    img1 = img2
-    img2 = cv2.imread('A2/BlurCar2/img/'+ str(i).zfill(4)+'.jpg')
-    store_img_1 = cv2.cvtColor(img1,cv2.COLOR_BGR2GRAY)
-    store_img_2 = cv2.cvtColor(img2,cv2.COLOR_BGR2GRAY)   
-    parameters = projective_tracker(store_img_1,store_img_2,initial_parameters,initial_rect,dimensions,learning_rate=1)
-    sum1 += store1
-    initial_parameters = parameters
-    point_list, ghi = projective_plotter(img2,rectangles[0][0], rectangles[0][1],parameters)
-    for  j in range(0,len(point_list)):
-        point_list[j] = [point_list[j][0],point_list[j][1]]
-    point_list = np.array(point_list)
-    mask_img = mask_plotter(point_list,img2)
-    mask_store = np.zeros((img2.shape[0],img2.shape[1]))
-    mask_store[rectangles[i][0][1]:rectangles[i][0][1]+rectangles[i][1][1],rectangles[i][0][0]:rectangles[i][0][0]+rectangles[i][1][0]] = 255
-    val = binary_mask_iou(mask_img,mask_store)
-    mask_iou_store.append(val)    
-    cv2.imwrite('A2/BlurCar2/output/'+str(i).zfill(4)+'.jpg',ghi)
-     
-
-mask_iou_store = np.array(mask_iou_store)
-print(np.mean(mask_iou_store))
