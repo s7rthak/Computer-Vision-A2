@@ -216,9 +216,10 @@ def projective_tracker(img_template, img_search, initial_parameters ,coordinate,
         diff = diff.reshape((rows,cols,1,1))
         update = (steepest_descent_T * diff).sum((0,1))
         dp = np.matmul(hess_inv,update).reshape(-1)
+        print(dp)
        
         #Needs to be checked, not sure about the +- thing @Sarthak
-        parameters =parameters - learning_rate * dp
+        parameters =parameters + learning_rate * dp
         
         norm = np.linalg.norm(dp)
         if(norm) < 0.001:
@@ -271,8 +272,8 @@ def affine_plotter(img,point,dimension,parameters):
 
 
 def projective_mapper(point,parameters):
-    new_coordinate_x = (int)((((1+parameters[0])*point[0])+ (parameters[3]* point[1]) + parameters[6])/((parameters[2]*point[0])+ (parameters[5]* point[1]) + 1+ parameters[8]))
-    new_coordinate_y = (int)(((parameters[1]*point[0])+ ((1+parameters[3])* point[1]) + parameters[5])//((parameters[2]*point[0])+ (parameters[5]* point[1]) + 1+ parameters[8]))
+    new_coordinate_x = (int)(round(((((1+parameters[0])*point[0])+ (parameters[3]* point[1]) + parameters[6])/((parameters[2]*point[0])+ (parameters[5]* point[1]) + 1+ parameters[8]))))
+    new_coordinate_y = (int)(round((((parameters[1]*point[0])+ ((1+parameters[3])* point[1]) + parameters[5])//((parameters[2]*point[0])+ (parameters[5]* point[1]) + 1+ parameters[8]))))
     return (new_coordinate_x,new_coordinate_y)
 
 def projective_plotter(img,point,dimension,parameters):
@@ -298,7 +299,7 @@ def mask_plotter(point_list,img):
     return mask
 
     
-file1= open('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/BlurCar2/groundtruth_rect.txt')
+file1= open('A2/BlurCar2/groundtruth_rect.txt')
 Lines = file1.readlines()
 rectangles = []
 for line in Lines:
@@ -308,23 +309,23 @@ for line in Lines:
     xyz.append((int(word[2]),(int(word[3]))))
     rectangles.append(xyz)
 
-img2 = cv2.imread('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/BlurCar2/img/0001.jpg')
+img2 = cv2.imread('A2/BlurCar2/img/0001.jpg')
 initial_rect = rectangles[0][0]
-initial_parameters = np.array([0,0])
+initial_parameters = np.array([0,0,0,0,0,0,0,0,0])
 dimensions = rectangles[0][1]
 end_point = (rectangles[0][0][0]+rectangles[0][1][0],rectangles[0][0][1]+rectangles[0][1][1])
 ghi = cv2.rectangle(img2, rectangles[0][0] , end_point, (255, 0, 0), 2)
-cv2.imwrite('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/BlurCar2/output/0001.jpg',ghi)
+cv2.imwrite('A2/BlurCar2/output/0001.jpg',ghi)
    
 template = crop(cv2.cvtColor(img2,cv2.COLOR_BGR2GRAY),initial_rect, dimensions)
 rows, cols = template.shape
-cv2.imwrite('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/BlurCar2/output/template.jpg',template)
+cv2.imwrite('A2/BlurCar2/output/template.jpg',template)
 
 mask_iou_store = []
 for i in range(2,585):
     print(i)
     img1 = img2
-    img2 = cv2.imread('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/BlurCar2/img/'+ str(i).zfill(4)+'.jpg')
+    img2 = cv2.imread('A2/BlurCar2/img/'+ str(i).zfill(4)+'.jpg')
     store_img_1 = cv2.cvtColor(img1,cv2.COLOR_BGR2GRAY)
     store_img_2 = cv2.cvtColor(img2,cv2.COLOR_BGR2GRAY)   
     parameters = projective_tracker(store_img_1,store_img_2,initial_parameters,initial_rect,dimensions,learning_rate=1)
@@ -339,7 +340,7 @@ for i in range(2,585):
     mask_store[rectangles[i][0][1]:rectangles[i][0][1]+rectangles[i][1][1],rectangles[i][0][0]:rectangles[i][0][0]+rectangles[i][1][0]] = 255
     val = binary_mask_iou(mask_img,mask_store)
     mask_iou_store.append(val)    
-    cv2.imwrite('/Users/shreyansnagori/Desktop/COL780 Assignment 2/A2/BlurCar2/output/'+str(i).zfill(4)+'.jpg',ghi)
+    cv2.imwrite('A2/BlurCar2/output/'+str(i).zfill(4)+'.jpg',ghi)
      
 
 mask_iou_store = np.array(mask_iou_store)
