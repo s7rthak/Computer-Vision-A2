@@ -123,7 +123,6 @@ elif int(sys.argv[1])==3:
     pic_count = len(rectangles)
     for i in range(2,pic_count):
         
-        print(i)
         img1 = img2
         img2 = cv2.imread(sys.argv[3]+ str(i).zfill(4)+'.jpg')
         store_img_1 = cv2.cvtColor(img1,cv2.COLOR_BGR2GRAY)
