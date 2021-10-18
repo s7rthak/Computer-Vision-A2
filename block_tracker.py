@@ -1,111 +1,1 @@
-import os
-import cv2
-import argparse
-import numpy as np
-
-def iou_compute(rect1, dim1,rect2, dim2):
-    
-    (x_left_1) = rect1[0]
-    (x_right_1) = rect1[0] + dim1[0]
-    (y_top_1) = rect1[1]
-    (y_bottom_1) = rect1[1] + dim1[1]
-    
-    (x_left_2) = rect2[0]
-    (x_right_2) = rect2[0] + dim2[0]
-    (y_top_2) = rect2[1]
-    (y_bottom_2) = rect2[1] + dim2[1]
-    
-    x_left_common = max(x_left_1,x_left_2)
-    x_right_common = min(x_right_1,x_right_2)
-    y_top_common = max(y_top_1,y_top_2)
-    y_bottom_common = min(y_bottom_1,y_bottom_2)
-    
-    common_area = None
-    
-    if x_right_common < x_left_common or y_bottom_common < y_top_common:
-        common_area = 0
-    else:
-        common_area = (x_right_common - x_left_common) *  (y_bottom_common - y_top_common)
-    
-    union_area = dim1[0]*dim1[1] + dim2[0]*dim2[1] - common_area
-    return common_area/union_area
-
-    
-
-def block_search_function(img1,img2,corner,dimension,search_radius,stride,type_dist):
-    
-    min_difference = float('inf')
-    coordinates = None
-    store_img = img1[corner[0]:corner[0]+dimension[0]+1,corner[1]:corner[1]+dimension[1]+1]
-    
-    if(type_dist==2):
-        store_img = (store_img - np.mean(store_img.flatten())/np.std(store_img.flatten()))
-        min_difference = -1 * min_difference
-    
-    for i in range(max(0,corner[0]-search_radius),min(img1.shape[0],corner[0]+search_radius)+1,stride):
-        for j in range(max(0,corner[1]-search_radius),min(img1.shape[1],corner[1]+search_radius)+1,stride):
-            if ((i+dimension[0]) > min(img1.shape[0],corner[0]+search_radius) ) :
-                continue
-            if ((j+dimension[1]) > min(img1.shape[1],corner[1]+search_radius) ) :
-                continue
-            store_2 = img2[i:i+store_img.shape[0],j:j+store_img.shape[1]]
-            
-            if store_2.shape != store_img.shape:
-                continue
-            #Mean Squared distance
-            if type_dist == 1:
-                abc = (store_2 - store_img) ** 2
-                val = np.sum(abc.flatten())
-                if val < min_difference:
-                    min_difference = val
-                    coordinates = (i,j)
-            else:
-                abc = (store_2- np.mean(store_2))/np.std(store_2)
-                val = np.sum((np.dot(store_img,abc.T)).flatten())
-                if val > min_difference:
-                    min_difference = val
-                    coordinates = (i,j)
-                
-    return coordinates
-                                
-                
-
-
-file1= open('A2/Bolt/groundtruth_rect.txt')
-Lines = file1.readlines()
-rectangles = []
-for line in Lines:
-    word= line.split(',')
-    xyz = []
-    xyz.append((int(word[0]),(int(word[1]))))
-    xyz.append((int(word[2]),(int(word[3]))))
-    rectangles.append(xyz)
-                   
-    
-print('Reading done.')
-    
-img2 = cv2.imread('A2/Bolt/img/0001.jpg')
-initial_rect = rectangles[0][0]
-dimensions = rectangles[0][1]
-
-end_point = (rectangles[0][0][0]+rectangles[0][1][0],rectangles[0][0][1]+rectangles[0][1][1])
-ghi = cv2.rectangle(img2, rectangles[0][0] , end_point, (255, 0, 0), 2)
-cv2.imwrite('A2/Bolt/output/0001.jpg',ghi)
-
-miou_tot = 0
-for i in range(2,351):
-    print(i)
-    img1 = img2
-    img2 = cv2.imread('A2/Bolt/img/'+ str(i).zfill(4)+'.jpg')
-    store_img_1 = cv2.cvtColor(img1,cv2.COLOR_BGR2GRAY)
-    store_img_2 = cv2.cvtColor(img2,cv2.COLOR_BGR2GRAY)   
-    coordinates = block_search_function(store_img_1,store_img_2,initial_rect,dimensions,max(dimensions[0],dimensions[1]),1,2)
-    end_point = (coordinates[0]+dimensions[0],coordinates[1]+dimensions[1])
-    ghi = cv2.rectangle(img2, coordinates , end_point, (255, 0, 0), 2)
-    cv2.imwrite('A2/Bolt/output/'+str(i).zfill(4)+'.jpg',ghi)
-    miou_tot += iou_compute(rectangles[i-1][0],dimensions,coordinates,dimensions)
-    initial_rect = coordinates
-
-miou_tot = miou_tot/584
-print(miou_tot)
-    
+   import osimport cv2import numpy as npSSD = 1NCC = 2BOLT = 350BLURCAR = 585def iou(bb1, bb2):    x_left = max(bb1[0], bb2[0])    x_right = min(bb1[0]+bb1[2], bb2[0]+bb2[2])    y_top = max(bb1[1],bb2[1])    y_bottom = min(bb1[1]+bb1[3], bb2[1]+bb2[3])    if x_right < x_left or y_bottom < y_top:        return 0.0    intersection_area = (x_right - x_left) * (y_bottom - y_top)    bb1_area = bb1[2] * bb1[3]    bb2_area = bb2[2] * bb2[3]    iou = intersection_area / float(bb1_area + bb2_area - intersection_area)    return iouclass BlockMatch():    def __init__(self, template, bbox, alpha=0.2):        self.template = template        self.alpha = alpha        self.bbox = bbox        self.h = self.bbox[3]        self.w = self.bbox[2]    def get_best_match(self, frame, search_over=10000, stride=1, measure=SSD):        H, W = frame.shape[0], frame.shape[1]        C = frame.shape[2] if len(frame.shape) == 3 else 1        min_diff = float('inf')        max_diff = float('-inf')        current_best_match = None        min_x_range = max(0, self.bbox[0]-search_over)        max_x_range = min(W - (self.w-1), self.bbox[0]+search_over)        min_y_range = max(0, self.bbox[1]-search_over)        max_y_range = min(H - (self.h-1), self.bbox[1]+search_over)        for i in range(min_y_range, max_y_range, stride):            for j in range(min_x_range, max_x_range, stride):                current_block = frame[i:i+self.h,j:j+self.w].astype(np.int64)                if measure == SSD:                    current_diff = (1.0/(self.h*self.w))*np.square(current_block-self.template)                    consolidated_diff = np.sum(current_diff)                    if consolidated_diff < min_diff:                        min_diff = consolidated_diff                        current_best_match = (j, i, self.w, self.h)                if measure == NCC:                    normalized_img, normalized_template = np.zeros((self.h, self.w, C)), np.zeros((self.h, self.w, C))                    if C == 1:                        normalized_img = (current_block - np.mean(current_block))/np.std(current_block)                        normalized_template = (self.template - np.mean(self.template))/np.std(self.template)                    else:                        for k in range(C):                            normalized_img[:,:,k] = (current_block[:,:,k] - np.mean(current_block[:,:,k].flatten()))/np.std(current_block[:,:,k].flatten())                            normalized_template[:,:,k] = (self.template[:,:,k] - np.mean(self.template[:,:,k].flatten()))/np.std(self.template[:,:,k].flatten())                                        consolidated_diff = np.sum(np.multiply(normalized_img, normalized_template))                    if consolidated_diff > max_diff:                        max_diff = consolidated_diff                        current_best_match = (j, i, self.w, self.h)        # Template Update (Moving-Average)        best_match_block = frame[current_best_match[1]:current_best_match[1]+self.h,current_best_match[0]:current_best_match[0]+self.w]        self.template = np.rint(self.alpha * best_match_block + (1-self.alpha) * self.template)        self.template = self.template.astype(np.uint8)        self.bbox = current_best_match        return current_best_match
