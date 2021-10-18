@@ -26,9 +26,11 @@ def iou(bb1, bb2):
 
 
 class BlockMatch():
-    def __init__(self, template, bbox, alpha=0.2):
+    def __init__(self, template, bbox, alpha=0.0, template_correction=False):
+        self.first_template = template
         self.template = template
         self.alpha = alpha
+        self.tc = template_correction
         self.bbox = bbox
         self.h = self.bbox[3]
         self.w = self.bbox[2]
@@ -38,8 +40,11 @@ class BlockMatch():
         C = frame.shape[2] if len(frame.shape) == 3 else 1
 
         min_diff = float('inf')
+        first_min_diff = float('inf')
         max_diff = float('-inf')
+        first_max_diff = float('-inf')
         current_best_match = None
+        first_best_match = None
 
         min_x_range = max(0, self.bbox[0]-search_over)
         max_x_range = min(W - (self.w-1), self.bbox[0]+search_over)
@@ -58,6 +63,15 @@ class BlockMatch():
                         min_diff = consolidated_diff
                         current_best_match = (j, i, self.w, self.h)
 
+                    if self.tc:
+                        first_diff = (1.0/(self.h*self.w))*np.square(current_block-self.first_template)
+                        consolidated_first_diff = np.sum(first_diff)
+
+                        if consolidated_first_diff < first_min_diff:
+                            first_min_diff = consolidated_diff
+                            first_best_match = (j, i, self.w, self.h)
+
+
                 if measure == NCC:
                     normalized_img, normalized_template = np.zeros((self.h, self.w, C)), np.zeros((self.h, self.w, C))
                     if C == 1:
@@ -73,11 +87,24 @@ class BlockMatch():
                         max_diff = consolidated_diff
                         current_best_match = (j, i, self.w, self.h)
 
+                    # if self.tc:
+                    #     first_diff = (1.0/(self.h*self.w))*np.square(current_block-self.first_template)
+                    #     consolidated_first_diff = np.sum(first_diff)
+
+                    #     if consolidated_first_diff < first_min_diff:
+                    #         first_min_diff = consolidated_diff
+                    #         first_best_match = (j, i, self.w, self.h)
+
         # Template Update (Moving-Average)
         best_match_block = frame[current_best_match[1]:current_best_match[1]+self.h,current_best_match[0]:current_best_match[0]+self.w]
         self.template = np.rint(self.alpha * best_match_block + (1-self.alpha) * self.template)
         self.template = self.template.astype(np.uint8)
         self.bbox = current_best_match
+
+        # Template Correction (IOU-match)
+        if self.tc and iou(current_best_match, first_best_match) >= 1.0:
+            self.template = best_match_block
+            self.bbox = current_best_match
 
         return current_best_match
 
@@ -89,13 +116,13 @@ with open('A2/Bolt/groundtruth_rect.txt') as gt:
         bboxes.append((int(nums[0]), int(nums[1]), int(nums[2]), int(nums[3])))
 
 first_frame = cv2.imread('A2/Bolt/img/0001.jpg')
-ebma = BlockMatch(first_frame[bboxes[0][1]:bboxes[0][1]+bboxes[0][3],bboxes[0][0]:bboxes[0][0]+bboxes[0][2]], bboxes[0], alpha=0.0)
+ebma = BlockMatch(first_frame[bboxes[0][1]:bboxes[0][1]+bboxes[0][3],bboxes[0][0]:bboxes[0][0]+bboxes[0][2]], bboxes[0], template_correction=False)
 
 IOUs = []
 for i in range(2, BOLT+1):
     print(i)
     frame = cv2.imread('A2/Bolt/img/' + str(i).zfill(4) + '.jpg')
-    best_match = ebma.get_best_match(frame, 5)
+    best_match = ebma.get_best_match(frame, 10)
     IOUs.append(iou(best_match, bboxes[i-1]))
     tracked_frame = cv2.rectangle(frame, (best_match[0], best_match[1]), (best_match[0]+best_match[2], best_match[1]+best_match[3]), (255, 0, 0), 2)
     cv2.imwrite('A2/Bolt/output/' + str(i).zfill(4) + '.jpg', tracked_frame)
