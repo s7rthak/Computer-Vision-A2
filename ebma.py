@@ -108,23 +108,23 @@ class BlockMatch():
 
         return current_best_match
 
-bboxes = []
-with open('A2/Bolt/groundtruth_rect.txt') as gt:
-    all_lines = gt.readlines()
-    for line in all_lines:
-        nums = line.split(',')
-        bboxes.append((int(nums[0]), int(nums[1]), int(nums[2]), int(nums[3])))
+# bboxes = []
+# with open('A2/Bolt/groundtruth_rect.txt') as gt:
+#     all_lines = gt.readlines()
+#     for line in all_lines:
+#         nums = line.split(',')
+#         bboxes.append((int(nums[0]), int(nums[1]), int(nums[2]), int(nums[3])))
 
-first_frame = cv2.imread('A2/Bolt/img/0001.jpg')
-ebma = BlockMatch(first_frame[bboxes[0][1]:bboxes[0][1]+bboxes[0][3],bboxes[0][0]:bboxes[0][0]+bboxes[0][2]], bboxes[0], template_correction=False)
+# first_frame = cv2.imread('A2/Bolt/img/0001.jpg')
+# ebma = BlockMatch(first_frame[bboxes[0][1]:bboxes[0][1]+bboxes[0][3],bboxes[0][0]:bboxes[0][0]+bboxes[0][2]], bboxes[0], template_correction=False)
 
-IOUs = []
-for i in range(2, BOLT+1):
-    print(i)
-    frame = cv2.imread('A2/Bolt/img/' + str(i).zfill(4) + '.jpg')
-    best_match = ebma.get_best_match(frame, 10)
-    IOUs.append(iou(best_match, bboxes[i-1]))
-    tracked_frame = cv2.rectangle(frame, (best_match[0], best_match[1]), (best_match[0]+best_match[2], best_match[1]+best_match[3]), (255, 0, 0), 2)
-    cv2.imwrite('A2/Bolt/output/' + str(i).zfill(4) + '.jpg', tracked_frame)
+# IOUs = []
+# for i in range(2, BOLT+1):
+#     print(i)
+#     frame = cv2.imread('A2/Bolt/img/' + str(i).zfill(4) + '.jpg')
+#     best_match = ebma.get_best_match(frame, 10)
+#     IOUs.append(iou(best_match, bboxes[i-1]))
+#     tracked_frame = cv2.rectangle(frame, (best_match[0], best_match[1]), (best_match[0]+best_match[2], best_match[1]+best_match[3]), (255, 0, 0), 2)
+#     cv2.imwrite('A2/Bolt/output/' + str(i).zfill(4) + '.jpg', tracked_frame)
 
-print('mIOU = ' + str(np.mean(IOUs)))
+# print('mIOU = ' + str(np.mean(IOUs)))
