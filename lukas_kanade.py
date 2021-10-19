@@ -43,7 +43,6 @@ def jacobian_translation(x_shape,y_shape,coordinates):
 
 
 def translation_tracker(img_template, img_search, initial_parameters, coordinate, dimension, max_iter=500,learning_rate=0.05):
-    
     parameters = np.array([0,0])
     parameters = initial_parameters
     iterations = 0
@@ -171,8 +170,6 @@ def jacobian_projection(parameters,x_shape,y_shape,coordinates):
     return jacob
         
 def projective_tracker(img_template, img_search, initial_parameters ,coordinate, dimension, max_iter=100,learning_rate=0.001):
-    
-    
     parameters = np.array([0,0,0,0,0,0,0,0])
     parameters = initial_parameters
     iterations = 0
@@ -194,8 +191,6 @@ def projective_tracker(img_template, img_search, initial_parameters ,coordinate,
         gradient_dy = crop(gradient_dy,coordinate,dimension)
         gradient_fin = np.stack((gradient_dx,gradient_dy),axis=2)
         gradient_fin = np.expand_dims(gradient_fin,axis=2)
-        
-        
         
         #Applying Lukas Kanade Formula
         jacob = jacobian_projection(parameters,cols,rows,coordinate)

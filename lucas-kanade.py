@@ -37,15 +37,24 @@ class LucasKanade():
         Iy, Ix = np.gradient(frame)
         p = self.p_prev
 
+        x1, y1, x2, y2 = self.bbox[0], self.bbox[1], self.bbox[0]+self.bbox[2], self.bbox[1]+self.bbox[3]
+
         cnt = 0
         while cnt < 100:
             cnt += 1
             WM = np.array([[1.0 + p[0], p[1], p[2]],
                        [p[3], 1.0 + p[4], p[5]]])
 
-            warpImg = cv2.warpAffine(frame, WM, (frame.shape[1], frame.shape[0]), flags=cv2.WARP_INVERSE_MAP)[self.bbox[1]:self.bbox[1]+self.bbox[3],self.bbox[0]:self.bbox[0]+self.bbox[2]]
-            Ix_g = cv2.warpAffine(Ix, WM, (frame.shape[1], frame.shape[0]), flags=cv2.WARP_INVERSE_MAP)
-            Iy_g = cv2.warpAffine(Iy, WM, (frame.shape[1], frame.shape[0]), flags=cv2.WARP_INVERSE_MAP)
+            x1_w = WM[0,0] * x1 + WM[0,1] * y1 + WM[0,2]
+            y1_w = WM[1,0] * x1 + WM[1,1] * y1 + WM[1,2]
+            x2_w = WM[0,0] * x2 + WM[0,1] * y2 + WM[0,2]
+            y2_w = WM[1,0] * x2 + WM[1,1] * y2 + WM[1,2]
+            print(WM)
+            print(x1_w, y1_w, x2_w, y2_w)
+
+            warpImg = cv2.warpAffine(frame, WM, (frame.shape[1], frame.shape[0]), flags=cv2.INTER_CUBIC)[y1:y2,x1:x2]
+            Ix_g = cv2.warpAffine(Ix, WM, (frame.shape[1], frame.shape[0]), flags=cv2.INTER_CUBIC)[y1:y2,x1:x2]
+            Iy_g = cv2.warpAffine(Iy, WM, (frame.shape[1], frame.shape[0]), flags=cv2.INTER_CUBIC)[y1:y2,x1:x2]
             I_g = np.vstack((Ix_g.ravel(),Iy_g.ravel())).T
 
             err = self.template - warpImg
@@ -56,8 +65,8 @@ class LucasKanade():
             for i in range(self.template.shape[0]):
                 for j in range(self.template.shape[1]):
                     I_indiv = np.array([I_g[i*self.template.shape[1]+j]]).reshape(1, 2)
-                    jac_indiv = np.array([[j, 0, i, 0, 1, 0],
-                                            [0, j, 0, i, 0, 1]])
+                    jac_indiv = np.array([[self.bbox[0]+j, 0, self.bbox[1]+i, 0, 1, 0],
+                                            [0, self.bbox[0]+j, 0, self.bbox[1]+i, 0, 1]])
                     delta[i*self.template.shape[1]+j] = I_indiv @ jac_indiv
 
             H = delta.T @ delta
@@ -77,7 +86,7 @@ class LucasKanade():
         W = np.array([[1.0 + p[0], p[1], p[2]],
                        [p[3], 1.0 + p[4], p[5]]])
         points = [(self.bbox[0],self.bbox[1]), (self.bbox[0]+self.bbox[2],self.bbox[1]), (self.bbox[0]+self.bbox[2],self.bbox[1]+self.bbox[3]), (self.bbox[0],self.bbox[1]+self.bbox[3])]
-        print(points)
+        # print(points)
         print(W)
         for i in range(4):
             warpedPt = (round(W[0,0] * points[i][0] + W[0,1] * points[i][1] + W[0,2]), round(W[1,0] * points[i][0] + W[1,1] * points[i][1] + W[1,2]))
@@ -102,6 +111,7 @@ for i in range(2, BLURCAR+1):
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     best_match = lk.get_best_match(frame)
     print(best_match)
+    print(bboxes[i-1])
     frame = cv2.line(frame, best_match[0], best_match[1], (255,0,0), 2)
     frame = cv2.line(frame, best_match[1], best_match[2], (255,0,0), 2)
     frame = cv2.line(frame, best_match[2], best_match[3], (255,0,0), 2)
