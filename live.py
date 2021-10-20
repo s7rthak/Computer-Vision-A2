@@ -26,6 +26,7 @@ dimensions = None
 initial_rect_list = None
 dimensions_list = None
 end_point = None
+layers=7
 
 video_object = cv2.VideoCapture(0)
 
@@ -49,13 +50,13 @@ while True:
     elif frame_no == 2:
         initial_rect = (initial_bbox[0], initial_bbox[1])
         dimensions = (initial_bbox[2], initial_bbox[3])
-        dimensions_list= pyr.generate_coordinate(dimensions)
-        initial_rect_list = pyr.generate_coordinate(initial_rect)
+        dimensions_list= pyr.generate_coordinate(dimensions,no_layers=layers)
+        initial_rect_list = pyr.generate_coordinate(initial_rect,no_layers=layers)
         end_point = (initial_rect[0]+dimensions[0], initial_rect[1]+dimensions[1])
 
         pyr.template = pyr.template = lk.crop(cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY),initial_rect, dimensions)
         pyr.rows, pyr.cols = pyr.template.shape
-        pyr.template_list = pyr.generate_Pyramid(pyr.template)
+        pyr.template_list = pyr.generate_Pyramid(pyr.template,no_layers=layers)
         lk.template = pyr.template
         lk.rows, lk.cols = pyr.template.shape
     
@@ -73,8 +74,8 @@ while True:
         # point_list, ghi = lk.affine_plotter(frame,initial_rect,dimensions,parameters)
 
         ################# Pyramid ##################
-        # store_img_2_list = pyr.generate_Pyramid(store_img_2)
-        # parameters = pyr.affine_Pyramid(store_img_1,store_img_2_list,initial_rect_list,dimensions_list)
+        # store_img_2_list = pyr.generate_Pyramid(store_img_2,no_layers=layers)
+        # parameters = pyr.affine_Pyramid(store_img_1,store_img_2_list,initial_rect_list,dimensions_list,no_layers=layers)
         # point_list, ghi = pyr.affine_plotter(frame,initial_rect,dimensions,parameters)
         
         cv2.imshow('frame', ghi)
