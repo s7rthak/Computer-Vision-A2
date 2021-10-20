@@ -25,8 +25,8 @@ if int(sys.argv[1]) == 1:
     IOUs = []
     for i in range(2, pic_count+1):
         frame = cv2.imread(sys.argv[3] + str(i).zfill(4) + '.jpg')
-        frame = cv2.cvtColor(frame,cv2.COLOR_RGB2GRAY)
-        best_match = ebma.get_best_match(frame, 10)
+        frame_bw = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+        best_match = ebma.get_best_match(frame_bw, 5)
         IOUs.append(iou(best_match, bboxes[i-1]))
         tracked_frame = cv2.rectangle(frame, (best_match[0], best_match[1]), (best_match[0]+best_match[2], best_match[1]+best_match[3]), (255, 0, 0), 2)
         cv2.imwrite(sys.argv[4] + str(i).zfill(4) + '.jpg', tracked_frame)
@@ -40,7 +40,7 @@ if int(sys.argv[1])==2:
     Lines = file1.readlines()
     rectangles = []
     for line in Lines:
-        word= line.split(',')
+        word= line.split('\t')
         xyz = []
         xyz.append((int(word[0]),(int(word[1]))))
         xyz.append((int(word[2]),(int(word[3]))))
@@ -99,7 +99,7 @@ elif int(sys.argv[1])==3:
     Lines = file1.readlines()
     rectangles = []
     for line in Lines:
-        word= line.split()
+        word= line.split('\t')
         xyz = []
         xyz.append((int(word[0]),(int(word[1]))))
         xyz.append((int(word[2]),(int(word[3]))))

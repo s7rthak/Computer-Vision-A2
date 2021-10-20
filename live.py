@@ -11,16 +11,21 @@ parser.add_argument('-t', '--template', type=str, help='path to template', defau
 
 args = parser.parse_args()
 
+USE_GUI = True
+
 template_path = args.template
-template_img = cv2.imread(template_path)
-template_img_bw = cv2.cvtColor(template_img, cv2.COLOR_BGR2GRAY)
+template_img = None
+template_img_bw = None
+bm = None
+if not USE_GUI:
+    template_img = cv2.imread(template_path)
+    template_img_bw = cv2.cvtColor(template_img, cv2.COLOR_BGR2GRAY)
 initial_bbox = None
 initial_rect = None
 dimensions = None
 initial_rect_list = None
 dimensions_list = None
 end_point = None
-bm = ebma.BlockMatch(template_img, (0, 0, template_img.shape[1], template_img.shape[0]))
 
 video_object = cv2.VideoCapture(0)
 
@@ -31,7 +36,14 @@ while True:
 
     # Initialize some variables 
     if frame_no == 1:
-        initial_bbox = bm.get_best_match(frame, stride=3)
+        if USE_GUI:
+            r = cv2.selectROI(frame)
+            template_img = frame[int(r[1]):int(r[1]+r[3]), int(r[0]):int(r[0]+r[2])]
+            template_img_bw = cv2.cvtColor(template_img, cv2.COLOR_BGR2GRAY)
+            initial_bbox = (int(r[0]), int(r[1]), int(r[2]), int(r[3]))
+        else:
+            initial_bbox = bm.get_best_match(frame, stride=3)
+        bm = ebma.BlockMatch(template_img, initial_bbox)
         print(initial_bbox)
         prev_frame = frame
     elif frame_no == 2:
@@ -52,7 +64,8 @@ while True:
         store_img_2 = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)   
         prev_frame = frame
 
-        best_match = bm.get_best_match(frame, 10)
+        ################# Block Match #################
+        best_match = bm.get_best_match(frame, 10, stride=3)
         ghi = cv2.rectangle(frame, (best_match[0], best_match[1]), (best_match[0]+best_match[2], best_match[1]+best_match[3]), (255, 0, 0), 2)
 
         ################# Without pyramid ################
@@ -64,8 +77,7 @@ while True:
         # parameters = pyr.affine_Pyramid(store_img_1,store_img_2_list,initial_rect_list,dimensions_list)
         # point_list, ghi = pyr.affine_plotter(frame,initial_rect,dimensions,parameters)
         
-        horizontal = np.hstack((frame, ghi))
-        cv2.imshow('frame', horizontal)
+        cv2.imshow('frame', ghi)
         cv2.waitKey(1)
 
     frame_no += 1
